@@ -3,7 +3,7 @@
 
 title: "نظام إدارة تراخيص PUBG"
 description: "نظام إدارة آمن واحترافي لتراخيص مجتمع ألعاب PUBG مع حماية متقدمة"
-url: "https://yourusername.github.io"
+url: "https://darkcyberx.github.io"
 baseurl: "/pubg-license-dashboard"
 
 # Security and performance
@@ -19,31 +19,13 @@ plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-redirect-from
+  - jekyll-gzip
+  - jekyll-compress-html
 
 # Build settings
 markdown: kramdown
 highlighter: rouge
 incremental: true
-
-# Exclude from build
-exclude:
-  - README.md
-  - LICENSE
-  - SECURITY.md
-  - "*.ps1"
-  - "*.bat"
-  - "*.exe"
-  - "*.dll"
-  - "*.log"
-  - Logs/
-  - Registry_Backup/
-
-# Jekyll plugins for security and performance
-plugins:
-  - jekyll-redirect-from
-  - jekyll-sitemap
-  - jekyll-gzip
-  - jekyll-compress-html
 
 # Markdown processor
 kramdown:
@@ -64,9 +46,6 @@ compress_html:
   blanklines: false
   profile: false
 
-# Security headers (enforced by GitHub Pages)
-# Additional headers are set via meta tags in HTML
-
 # Exclude sensitive files from build
 exclude:
   - .env
@@ -76,6 +55,13 @@ exclude:
   - audit-logs/
   - "*.backup"
   - "*.bak"
+  - "*.ps1"
+  - "*.bat"
+  - "*.exe"
+  - "*.dll"
+  - "*.log"
+  - Logs/
+  - Registry_Backup/
   - node_modules/
   - vendor/
   - .sass-cache/
@@ -100,25 +86,14 @@ defaults:
     values:
       cache: true
 
-# Theme settings (optional)
-theme: minima
-
-# Social links (optional)
-github_username: yourusername
-
-# Analytics (optional - only if needed)
-# google_analytics: UA-XXXXXXXX-X
+# Social links
+github_username: darkcyberx
 
 # Collections (if needed for future expansions)
 collections:
   docs:
     output: true
     permalink: /:collection/:name/
-
-# Build settings
-highlighter: rouge
-incremental: true
-regenerate: true
 
 # Timezone
 timezone: UTC
