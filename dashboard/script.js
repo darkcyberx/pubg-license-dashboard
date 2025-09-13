@@ -48,84 +48,119 @@ class LicenseManager {
             });
         });
         
-        // Refresh buttons
-        document.getElementById('refreshLicenses').addEventListener('click', () => {
-            this.loadLicensesTable();
-        });
+        // Refresh buttons with null checks
+        const refreshLicenses = document.getElementById('refreshLicenses');
+        if (refreshLicenses) {
+            refreshLicenses.addEventListener('click', () => {
+                this.loadLicensesTable();
+            });
+        }
         
-        document.getElementById('refreshCustomers').addEventListener('click', () => {
-            this.loadCustomersTable();
-        });
+        const refreshCustomers = document.getElementById('refreshCustomers');
+        if (refreshCustomers) {
+            refreshCustomers.addEventListener('click', () => {
+                this.loadCustomersTable();
+            });
+        }
         
-        // Create license form
-        document.getElementById('createLicenseForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.createLicense();
-        });
+        // Setup optional event listeners for elements that may not exist
+        this.setupOptionalEventListeners();
+    }
+    
+    setupOptionalEventListeners() {
+        const elements = [
+            { id: 'createLicenseForm', event: 'submit', handler: (e) => { e.preventDefault(); this.createLicense(); }},
+            { id: 'saveLicense', event: 'click', handler: () => this.addLicense() },
+            { id: 'saveCustomer', event: 'click', handler: () => this.addCustomer() },
+            { id: 'generateKey', event: 'click', handler: () => {
+                const keyField = document.getElementById('modalLicenseKey');
+                if (keyField) keyField.value = this.generateLicenseKey();
+            }},
+            { id: 'saveSettings', event: 'click', handler: () => this.saveSettings() },
+            { id: 'exportData', event: 'click', handler: () => this.exportData() },
+            { id: 'importData', event: 'click', handler: () => this.importData() },
+            { id: 'clearData', event: 'click', handler: () => this.clearAllData() },
+            { id: 'licenseType', event: 'change', handler: (e) => this.updateExpiryDate(e.target.value) }
+        ];
         
-        // Modal forms
-        document.getElementById('saveLicense').addEventListener('click', () => {
-            this.addLicense();
-        });
-        
-        document.getElementById('saveCustomer').addEventListener('click', () => {
-            this.addCustomer();
-        });
-        
-        // Generate license key
-        document.getElementById('generateKey').addEventListener('click', () => {
-            document.getElementById('modalLicenseKey').value = this.generateLicenseKey();
-        });
-        
-        // Settings
-        document.getElementById('saveSettings').addEventListener('click', () => {
-            this.saveSettings();
-        });
-        
-        document.getElementById('exportData').addEventListener('click', () => {
-            this.exportData();
-        });
-        
-        document.getElementById('importData').addEventListener('click', () => {
-            this.importData();
-        });
-        
-        document.getElementById('clearData').addEventListener('click', () => {
-            this.clearAllData();
-        });
-        
-        // License type change
-        document.getElementById('licenseType').addEventListener('change', (e) => {
-            this.updateExpiryDate(e.target.value);
+        elements.forEach(({ id, event, handler }) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener(event, handler);
+            }
         });
     }
     
     handleLogin() {
-        const username = document.getElementById('username').value;
+        console.log('🔐 محاولة تسجيل دخول جديدة'); // Debug log
+        
+        const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
         
+        console.log('👤 اسم المستخدم المدخل:', username);
+        console.log('🔑 اسم المستخدم المطلوب:', this.adminCredentials.username);
+        
         try {
-            // Check credentials
+            // التحقق من صحة بيانات الدخول
             if (username === this.adminCredentials.username && password === this.adminCredentials.password) {
-                this.currentUser = username;
-                document.getElementById('currentUser').textContent = username;
+                console.log('✅ بيانات الدخول صحيحة، جاري تسجيل الدخول...');
                 
-                // Hide login modal and show dashboard
-                const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                this.currentUser = username;
+                const currentUserElement = document.getElementById('currentUser');
+                if (currentUserElement) {
+                    currentUserElement.textContent = username;
+                }
+                
+                // إخفاء نافذة تسجيل الدخول
+                const loginModalElement = document.getElementById('loginModal');
+                const loginModal = bootstrap.Modal.getInstance(loginModalElement);
                 if (loginModal) {
                     loginModal.hide();
                 }
-                document.getElementById('dashboard').classList.remove('d-none');
                 
-                // Clear login form
-                document.getElementById('loginForm').reset();
-                document.getElementById('loginError').classList.add('d-none');
+                // إخفاء النافذة بالقوة في حالة عدم عمل الطريقة العادية
+                if (loginModalElement) {
+                    loginModalElement.style.display = 'none';
+                    loginModalElement.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    
+                    // إزالة الخلفية المعتمة
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
                 
-                this.showSuccessMessage('تم تسجيل الدخول بنجاح!');
+                // إظهار لوحة التحكم
+                const dashboardElement = document.getElementById('dashboard');
+                if (dashboardElement) {
+                    dashboardElement.classList.remove('d-none');
+                    console.log('🎯 تم إظهار لوحة التحكم بنجاح');
+                }
+                
+                // مسح نموذج تسجيل الدخول
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.reset();
+                }
+                
+                const loginError = document.getElementById('loginError');
+                if (loginError) {
+                    loginError.classList.add('d-none');
+                }
+                
+                this.showSuccessMessage('🎉 تم تسجيل الدخول بنجاح!');
+                
+                // تحديث البيانات
+                this.updateStatistics();
+                this.loadTables();
+                
             } else {
+                console.log('❌ بيانات دخول خاطئة');
                 throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
             }
         } catch (error) {
+            console.error('🚫 خطأ في تسجيل الدخول:', error);
             this.showLoginError(error.message);
         }
     }
@@ -134,14 +169,24 @@ class LicenseManager {
         this.currentUser = null;
         document.getElementById('dashboard').classList.add('d-none');
         this.showLoginModal();
+        this.showSuccessMessage('تم تسجيل الخروج بنجاح');
     }
     
     showLoginModal() {
+        console.log('🔓 إظهار نافذة تسجيل الدخول');
+        
         // إخفاء الداش بورد فوراً
-        document.getElementById('dashboard').classList.add('d-none');
+        const dashboardElement = document.getElementById('dashboard');
+        if (dashboardElement) {
+            dashboardElement.classList.add('d-none');
+        }
         
         // إظهار نافذة تسجيل الدخول فوراً
         const loginModalElement = document.getElementById('loginModal');
+        if (!loginModalElement) {
+            console.error('❌ عنصر نافذة تسجيل الدخول غير موجود');
+            return;
+        }
         
         // إزالة أي مودال موجود مسبقاً
         const existingModal = bootstrap.Modal.getInstance(loginModalElement);
@@ -160,17 +205,37 @@ class LicenseManager {
         
         // تركيز على حقل اسم المستخدم بعد ظهور المودال
         loginModalElement.addEventListener('shown.bs.modal', () => {
-            document.getElementById('username').focus();
+            const usernameField = document.getElementById('username');
+            if (usernameField) {
+                usernameField.focus();
+            }
         }, { once: true });
         
         // مسح أي رسائل خطأ سابقة
-        document.getElementById('loginError').classList.add('d-none');
-        document.getElementById('loginForm').reset();
+        const loginError = document.getElementById('loginError');
+        if (loginError) {
+            loginError.classList.add('d-none');
+        }
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.reset();
+        }
+        
+        console.log('✅ تم إظهار نافذة تسجيل الدخول');
     }
     
     showLoginError(message) {
-        document.getElementById('loginErrorMessage').textContent = message;
-        document.getElementById('loginError').classList.remove('d-none');
+        const loginErrorMessage = document.getElementById('loginErrorMessage');
+        const loginError = document.getElementById('loginError');
+        
+        if (loginErrorMessage) {
+            loginErrorMessage.textContent = message;
+        }
+        if (loginError) {
+            loginError.classList.remove('d-none');
+        }
+        
+        console.log('🚫 عرض رسالة خطأ:', message);
     }
     
     generateLicenseKey() {
@@ -193,10 +258,19 @@ class LicenseManager {
             return daysUntilExpiry <= 7 && daysUntilExpiry >= 0;
         }).length;
         
-        document.getElementById('totalLicenses').textContent = this.licenses.length;
-        document.getElementById('activeLicenses').textContent = activeLicenses;
-        document.getElementById('expiringLicenses').textContent = expiringSoon;
-        document.getElementById('totalCustomers').textContent = this.customers.length;
+        const elements = {
+            totalLicenses: this.licenses.length,
+            activeLicenses: activeLicenses,
+            expiringLicenses: expiringSoon,
+            totalCustomers: this.customers.length
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
     }
     
     loadTables() {
@@ -207,24 +281,26 @@ class LicenseManager {
     
     loadLicensesTable() {
         const tbody = document.getElementById('licensesTableBody');
+        if (!tbody) return;
+        
         tbody.innerHTML = '';
         
         this.licenses.forEach(license => {
             const row = document.createElement('tr');
             
-            // Determine status class and text
+            // تحديد حالة الترخيص
             let statusClass = 'status-active';
-            let statusText = 'Active';
+            let statusText = 'نشط';
             
             if (license.status === 'revoked') {
                 statusClass = 'status-revoked';
-                statusText = 'Revoked';
+                statusText = 'ملغى';
             } else {
                 const expiryDate = new Date(license.expiryDate);
                 const today = new Date();
                 if (expiryDate < today) {
                     statusClass = 'status-expired';
-                    statusText = 'Expired';
+                    statusText = 'منتهي';
                 }
             }
             
@@ -234,13 +310,13 @@ class LicenseManager {
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>${license.expiryDate}</td>
                 <td>
-                    <button class="btn btn-info btn-sm action-btn" onclick="licenseManager.editLicense('${license.id}')">
+                    <button class="btn btn-info btn-sm action-btn" onclick="alert('تحرير الترخيص قريباً')" title="تحرير">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-warning btn-sm action-btn" onclick="licenseManager.extendLicense('${license.id}')">
+                    <button class="btn btn-warning btn-sm action-btn" onclick="alert('تمديد الترخيص قريباً')" title="تمديد">
                         <i class="fas fa-clock"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm action-btn" onclick="licenseManager.revokeLicense('${license.id}')">
+                    <button class="btn btn-danger btn-sm action-btn" onclick="alert('إلغاء الترخيص قريباً')" title="إلغاء">
                         <i class="fas fa-ban"></i>
                     </button>
                 </td>
@@ -252,6 +328,8 @@ class LicenseManager {
     
     loadCustomersTable() {
         const tbody = document.getElementById('customersTableBody');
+        if (!tbody) return;
+        
         tbody.innerHTML = '';
         
         this.customers.forEach(customer => {
@@ -263,10 +341,10 @@ class LicenseManager {
                 <td>${customer.telegram || '-'}</td>
                 <td>${customer.discord || '-'}</td>
                 <td>
-                    <button class="btn btn-info btn-sm action-btn" onclick="licenseManager.editCustomer('${customer.id}')">
+                    <button class="btn btn-info btn-sm action-btn" onclick="alert('تحرير العميل قريباً')" title="تحرير">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm action-btn" onclick="licenseManager.deleteCustomer('${customer.id}')">
+                    <button class="btn btn-danger btn-sm action-btn" onclick="alert('حذف العميل قريباً')" title="حذف">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -283,7 +361,7 @@ class LicenseManager {
         
         selects.forEach(select => {
             if (select) {
-                select.innerHTML = '<option value="">Select Customer</option>';
+                select.innerHTML = '<option value="">اختر عميل</option>';
                 this.customers.forEach(customer => {
                     const option = document.createElement('option');
                     option.value = customer.id;
@@ -307,7 +385,7 @@ class LicenseManager {
     }
     
     showToast(message, type = 'info') {
-        // Create toast container if it doesn't exist
+        // إنشاء حاوية الإشعارات إذا لم تكن موجودة
         let toastContainer = document.getElementById('toastContainer');
         if (!toastContainer) {
             toastContainer = document.createElement('div');
@@ -317,17 +395,19 @@ class LicenseManager {
             document.body.appendChild(toastContainer);
         }
         
-        // Create toast
+        // إنشاء الإشعار
         const toastId = `toast_${Date.now()}`;
         const toast = document.createElement('div');
         toast.id = toastId;
         toast.className = `toast align-items-center text-white bg-${type} border-0`;
         toast.setAttribute('role', 'alert');
         
+        const icon = type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle';
+        
         toast.innerHTML = `
             <div class="d-flex">
                 <div class="toast-body">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                    <i class="fas fa-${icon} me-2"></i>
                     ${message}
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -339,37 +419,149 @@ class LicenseManager {
         const toastInstance = new bootstrap.Toast(toast, { delay: 4000 });
         toastInstance.show();
         
-        // Remove toast element after it's hidden
+        // إزالة الإشعار بعد إخفائه
         toast.addEventListener('hidden.bs.toast', () => {
             toast.remove();
         });
     }
     
-    // Add minimal required methods for basic functionality
-    handleTabChange(target) { }
-    createLicense() { }
-    addLicense() { }
-    addCustomer() { }
-    updateExpiryDate() { }
-    editLicense() { }
-    extendLicense() { }
-    revokeLicense() { }
-    editCustomer() { }
-    deleteCustomer() { }
-    loadSettings() { }
-    saveSettings() { }
-    exportData() { }
-    importData() { }
-    clearAllData() { }
     saveLicenses() {
         localStorage.setItem('licenses', JSON.stringify(this.licenses));
     }
+    
     saveCustomers() {
         localStorage.setItem('customers', JSON.stringify(this.customers));
     }
+    
+    // وظائف أساسية للتبويبات والمميزات
+    handleTabChange(target) {
+        console.log('📋 تغيير التبويب إلى:', target);
+        switch(target) {
+            case '#licenses':
+                this.loadLicensesTable();
+                break;
+            case '#customers':
+                this.loadCustomersTable();
+                break;
+            case '#create':
+                this.populateCustomerDropdowns();
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // وظائف مؤقتة للمميزات المستقبلية
+    createLicense() { this.showInfoMessage('ميزة إنشاء التراخيص ستكون متاحة قريباً'); }
+    addLicense() { this.showInfoMessage('ميزة إضافة التراخيص ستكون متاحة قريباً'); }
+    addCustomer() { this.showInfoMessage('ميزة إضافة العملاء ستكون متاحة قريباً'); }
+    updateExpiryDate() { console.log('تحديث تاريخ انتهاء الصلاحية'); }
+    editLicense() { this.showInfoMessage('ميزة تحرير التراخيص ستكون متاحة قريباً'); }
+    extendLicense() { this.showInfoMessage('ميزة تمديد التراخيص ستكون متاحة قريباً'); }
+    revokeLicense() { this.showInfoMessage('ميزة إلغاء التراخيص ستكون متاحة قريباً'); }
+    editCustomer() { this.showInfoMessage('ميزة تحرير العملاء ستكون متاحة قريباً'); }
+    deleteCustomer() { this.showInfoMessage('ميزة حذف العملاء ستكون متاحة قريباً'); }
+    loadSettings() { console.log('تحميل الإعدادات'); }
+    saveSettings() { this.showInfoMessage('ميزة حفظ الإعدادات ستكون متاحة قريباً'); }
+    exportData() { this.showInfoMessage('ميزة تصدير البيانات ستكون متاحة قريباً'); }
+    importData() { this.showInfoMessage('ميزة استيراد البيانات ستكون متاحة قريباً'); }
+    clearAllData() { this.showInfoMessage('ميزة مسح جميع البيانات ستكون متاحة قريباً'); }
 }
 
-// Initialize the license manager when the page loads
+// تهيئة مدير التراخيص عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 بدء تحميل نظام إدارة تراخيص PUBG');
     window.licenseManager = new LicenseManager();
+    
+    // إضافة بيانات تجريبية بعد فترة قصيرة
+    setTimeout(() => {
+        if (window.licenseManager && window.licenseManager.customers.length === 0) {
+            console.log('📦 إضافة بيانات تجريبية...');
+            
+            // إضافة عملاء تجريبيين
+            const sampleCustomers = [
+                {
+                    id: '1',
+                    name: 'أحمد محمد',
+                    phone: '+966501234567',
+                    whatsapp: '+966501234567',
+                    telegram: '@ahmed_pubg',
+                    discord: 'Ahmed#1234',
+                    createdDate: '2024-01-15'
+                },
+                {
+                    id: '2',
+                    name: 'سارة علي',
+                    phone: '+966502345678',
+                    whatsapp: '+966502345678',
+                    telegram: '@sara_gaming',
+                    discord: 'SaraGamer#5678',
+                    createdDate: '2024-01-20'
+                },
+                {
+                    id: '3',
+                    name: 'محمد خالد',
+                    phone: '+966503456789',
+                    whatsapp: '+966503456789',
+                    telegram: '@mohamed_pubg',
+                    discord: 'Mohamed#9876',
+                    createdDate: '2024-02-01'
+                }
+            ];
+            
+            window.licenseManager.customers = sampleCustomers;
+            window.licenseManager.saveCustomers();
+            
+            // إضافة تراخيص تجريبية
+            const sampleLicenses = [
+                {
+                    id: '1',
+                    key: 'PUBG-ABCD-EFGH-IJKL-MNOP',
+                    customerId: '1',
+                    customerName: 'أحمد محمد',
+                    type: 'premium',
+                    status: 'active',
+                    createdDate: '2024-01-15',
+                    expiryDate: '2024-04-15',
+                    deviceLimit: 2,
+                    devicesBound: 1,
+                    notes: 'ترخيص مميز لمدة 90 يوم'
+                },
+                {
+                    id: '2',
+                    key: 'PUBG-QRST-UVWX-YZ12-3456',
+                    customerId: '2',
+                    customerName: 'سارة علي',
+                    type: 'basic',
+                    status: 'active',
+                    createdDate: '2024-01-20',
+                    expiryDate: '2024-02-20',
+                    deviceLimit: 1,
+                    devicesBound: 1,
+                    notes: 'ترخيص أساسي لمدة 30 يوم'
+                },
+                {
+                    id: '3',
+                    key: 'PUBG-WXYZ-1234-ABCD-5678',
+                    customerId: '3',
+                    customerName: 'محمد خالد',
+                    type: 'professional',
+                    status: 'active',
+                    createdDate: '2024-02-01',
+                    expiryDate: '2025-02-01',
+                    deviceLimit: 5,
+                    devicesBound: 3,
+                    notes: 'ترخيص احترافي لمدة سنة كاملة'
+                }
+            ];
+            
+            window.licenseManager.licenses = sampleLicenses;
+            window.licenseManager.saveLicenses();
+            
+            window.licenseManager.updateStatistics();
+            window.licenseManager.loadTables();
+            
+            console.log('✅ تم تحميل البيانات التجريبية بنجاح');
+        }
+    }, 2000);
 });
